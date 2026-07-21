@@ -1,32 +1,23 @@
-# React + TypeScript + Vite
+# branch — GitHub Events as a 3D Glowing Tree
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Your GitHub activity visualized as a living, glowing tree. Each repo is a branch. Each event (push, PR, issue, star, fork) is a glowing leaf.
 
-Currently, two official plugins are available:
+**Visual Style:** Bold — Circuit (digital precision, dark blue-black background, dot grid, green/blue/red/gold/purple event type accents)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+**Data Source:** GitHub Events API (parthchandak02 events)
 
-## React Compiler
+**How it works:**
+- The trunk represents time (oldest at bottom, newest at top)
+- Each repo branches off with its own curved path (CatmullRomLine)
+- Each event is a glowing leaf on its repo's branch
+- Leaf size = number of commits pushed (for PushEvents)
+- Leaf color encodes event type: green=push, blue=PR, gold=star, red=issue, purple=fork
+- OrbitControls to navigate — orbit, zoom, pan
+- Tap a leaf to reveal event details in the QuietZone
+- Branches grow in with staggered ease-out animation on first load
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**GitHub:** https://github.com/parthchandak02/branch
 
-## Expanding the Oxlint configuration
+**Live:** https://branch.parthchandak.info
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
-
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+**Tech:** React Three Fiber + drei + Vite. Motion spring physics for QuietZone. Zustand for state. Hosted on Cloudflare Pages.
