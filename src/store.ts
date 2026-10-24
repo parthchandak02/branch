@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { BranchEvent } from './data/events'
 
-export type DataMode = 'live' | 'cached'
+export type DataMode = 'loading' | 'live' | 'sample'
 
 export interface EventStats {
   totalEvents: number
@@ -38,11 +38,14 @@ interface AppState {
   events: BranchEvent[]
   selectedEvent: BranchEvent | null
   dataMode: DataMode
+  /** Why the last request failed, if it did (shown next to the mode). */
+  fetchError: string | null
   lastFetchTime: number | null
   stats: EventStats
   setEvents: (events: BranchEvent[], mode: DataMode) => void
   setSelectedEvent: (event: BranchEvent | null) => void
   setLastFetchTime: (time: number) => void
+  setFetchError: (error: string | null) => void
 }
 
 const emptyStats = computeStats([])
@@ -50,7 +53,8 @@ const emptyStats = computeStats([])
 export const useStore = create<AppState>((set) => ({
   events: [],
   selectedEvent: null,
-  dataMode: 'cached',
+  dataMode: 'loading',
+  fetchError: null,
   lastFetchTime: null,
   stats: emptyStats,
   setEvents: (events, mode) =>
@@ -61,4 +65,5 @@ export const useStore = create<AppState>((set) => ({
     }),
   setSelectedEvent: (event) => set({ selectedEvent: event }),
   setLastFetchTime: (time) => set({ lastFetchTime: time }),
+  setFetchError: (error) => set({ fetchError: error }),
 }))

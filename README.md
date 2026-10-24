@@ -32,9 +32,9 @@
 
 A React Three Fiber scene built from the public
 [GitHub Events API](https://docs.github.com/en/rest/activity/events) for one account
-(`parthchandak02`). It pulls the latest 100 events once a minute, keeps the five kinds worth
-seeing, and grows them into a tree that slowly turns. No token is needed, though the one-minute
-poll uses up GitHub's unauthenticated limit of 60 requests an hour per visitor IP.
+(`parthchandak02`). It pulls the latest 100 events every five minutes, keeps the five kinds
+worth seeing, and grows them into a tree that slowly turns. No token is needed: that is 12 of
+GitHub's 60 unauthenticated requests an hour per visitor IP.
 
 ## How it works
 
@@ -49,9 +49,10 @@ Branches grow out from the trunk with a staggered ease-out when the page loads. 
 scroll to zoom. Click a leaf for a panel with its type, repo, age, commit count or PR and issue
 title, and a link to the repo; it fades after a few seconds.
 
-If the API call fails or is rate-limited, the tree falls back to ten built-in sample events and
-the stamp in the bottom-left reads `cached`. Those are made-up samples, not a saved copy of real
-events.
+If a refresh fails, the events already on screen stay and the stamp in the bottom-left adds the
+reason, for example `live (rate-limited until 14:05)`; when GitHub reports the hourly limit is
+spent, the next request waits for the reset time. If nothing has loaded yet, the tree shows ten
+made-up sample events and the stamp reads `sample data`.
 
 ## Run it
 

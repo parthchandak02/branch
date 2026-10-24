@@ -20,6 +20,7 @@ export function Chrome() {
   const stats = useStore((state) => state.stats)
   const dataMode = useStore((state) => state.dataMode)
   const lastFetchTime = useStore((state) => state.lastFetchTime)
+  const fetchError = useStore((state) => state.fetchError)
   const [, tick] = useState(0)
 
   useEffect(() => {
@@ -38,7 +39,8 @@ export function Chrome() {
 
       <div id="stamp">
         GitHub Events · {stats.repoCount} repo{stats.repoCount === 1 ? '' : 's'} ·{' '}
-        {stats.totalEvents} leaves · {dataMode} · {formatSecondsAgo(lastFetchTime)}
+        {stats.totalEvents} leaves · {dataMode === 'sample' ? 'sample data' : dataMode}
+        {fetchError ? ` (${fetchError})` : ''} · {formatSecondsAgo(lastFetchTime)}
       </div>
 
       <div id="desc">

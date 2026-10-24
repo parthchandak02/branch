@@ -22,7 +22,9 @@ export interface BranchEvent {
   action?: string
 }
 
-export const POLL_INTERVAL = 60_000
+// Unauthenticated GitHub API calls are limited to 60 an hour per IP, shared with anything
+// else on that network. Five minutes keeps one open tab at 12 calls an hour.
+export const POLL_INTERVAL = 5 * 60_000
 
 const SAMPLE_EVENTS: BranchEvent[] = [
   {
@@ -148,14 +150,39 @@ function parseGitHubEvent(raw: Record<string, unknown>, index: number): BranchEv
   return event
 }
 
-export async function fetchEvents(): Promise<{
-  events: BranchEvent[]
-  mode: 'live' | 'cached'
-}> {
+export interface FetchResult {
+  /** null when the request failed: keep whatever is already on screen. */
+  events: BranchEvent[] | null
+  /** Short reason shown in the stamp when the request failed, e.g. "rate-limited until 14:05". */
+  error?: string
+  /** How long to wait before the next request. */
+  nextPollMs: number
+}
+
+function formatClock(ms: number): string {
+  return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
+export async function fetchEvents(): Promise<FetchResult> {
   try {
     const response = await fetch(
       'https://api.github.com/users/parthchandak02/events?per_page=100',
     )
+    const remaining = response.headers.get('x-ratelimit-remaining')
+    const reset = Number(response.headers.get('x-ratelimit-reset'))
+    if ((response.status === 403 || response.status === 429) && (remaining === '0' || response.status === 429)) {
+      const retryAfter = Number(response.headers.get('retry-after'))
+      const resumeAt = Number.isFinite(retryAfter) && retryAfter > 0
+        ? Date.now() + retryAfter * 1000
+        : Number.isFinite(reset) && reset > 0
+          ? reset * 1000
+          : Date.now() + 15 * 60_000
+      return {
+        events: null,
+        error: `rate-limited until ${formatClock(resumeAt)}`,
+        nextPollMs: Math.max(POLL_INTERVAL, resumeAt - Date.now() + 5_000),
+      }
+    }
     if (!response.ok) throw new Error(`GitHub API ${response.status}`)
 
     const data = (await response.json()) as Record<string, unknown>[]
@@ -166,11 +193,22 @@ export async function fetchEvents(): Promise<{
 
     if (events.length === 0) throw new Error('No displayable events')
 
-    return { events, mode: 'live' }
-  } catch {
-    return { events: SAMPLE_EVENTS, mode: 'cached' }
+    // If the remaining budget is nearly spent, wait for the window to reset.
+    const lowBudget = remaining !== null && Number(remaining) < 3 && Number.isFinite(reset) && reset > 0
+    return {
+      events,
+      nextPollMs: lowBudget ? Math.max(POLL_INTERVAL, reset * 1000 - Date.now() + 5_000) : POLL_INTERVAL,
+    }
+  } catch (error) {
+    return {
+      events: null,
+      error: error instanceof Error && error.message.startsWith('GitHub API') ? error.message : 'offline',
+      nextPollMs: POLL_INTERVAL,
+    }
   }
 }
+
+export { SAMPLE_EVENTS }
 
 export function repoUrl(repoName: string): string {
   return `https://github.com/${repoName}`

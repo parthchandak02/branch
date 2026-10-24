@@ -4,33 +4,40 @@ import { OrbitControls } from '@react-three/drei'
 import { Background } from './components/Background'
 import { BranchTree } from './components/BranchTree'
 import { Chrome } from './components/Chrome'
-import { fetchEvents, POLL_INTERVAL } from './data/events'
+import { fetchEvents, SAMPLE_EVENTS } from './data/events'
 import { useStore } from './store'
 
 function DataLoader() {
   const setEvents = useStore((state) => state.setEvents)
   const setLastFetchTime = useStore((state) => state.setLastFetchTime)
+  const setFetchError = useStore((state) => state.setFetchError)
 
   useEffect(() => {
     let active = true
+    let timer: number | undefined
 
     const load = async () => {
       const result = await fetchEvents()
       if (!active) return
-      setEvents(result.events, result.mode)
-      setLastFetchTime(Date.now())
+      if (result.events) {
+        setEvents(result.events, 'live')
+        setLastFetchTime(Date.now())
+        setFetchError(null)
+      } else {
+        // Keep live events already on screen; only show the samples if nothing loaded yet.
+        if (useStore.getState().dataMode !== 'live') setEvents(SAMPLE_EVENTS, 'sample')
+        setFetchError(result.error ?? 'request failed')
+      }
+      timer = window.setTimeout(() => void load(), result.nextPollMs)
     }
 
     void load()
-    const interval = window.setInterval(() => {
-      void load()
-    }, POLL_INTERVAL)
 
     return () => {
       active = false
-      window.clearInterval(interval)
+      window.clearTimeout(timer)
     }
-  }, [setEvents, setLastFetchTime])
+  }, [setEvents, setLastFetchTime, setFetchError])
 
   return null
 }
